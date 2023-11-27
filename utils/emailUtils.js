@@ -1,5 +1,6 @@
 const { google } = require("googleapis");
 
+// function to list emails
 const listEmails = async (auth) => {
     const gmail = google.gmail({ version: "v1", auth });
 
@@ -14,19 +15,20 @@ const listEmails = async (auth) => {
     }
 };
 
-
-const sendAutoReply = async (auth, messageId) => {
+// function to send an auto reply to a specific email 
+const sendAutoReply = async (auth, emailId) => {
     const gmail = google.gmail({ version: "v1", auth });
 
     try {
         const email = await gmail.users.messages.get({
             userId: "me",
-            id: messageId,
+            id: emailId,
         });
+        // extract from email, to email and subject of the specific email 
         const headers = email.data.payload.headers;
         const fromHeader = headers.find((header) => header.name === "From");
         const toEmail = fromHeader ? fromHeader.value : undefined;
-        const SenderName = toEmail.split(' ')[0];
+        const SenderName = toEmail.split(" ")[0];
         const toHeader = headers.find((header) => header.name === "To");
         const fromEmail = toHeader ? toHeader.value : undefined;
         const subjectHeader = headers.find(
@@ -61,6 +63,7 @@ const sendAutoReply = async (auth, messageId) => {
             "",
             `${autoReplyMessage2}`,
         ];
+        // construnct the message
         const message = messageParts.join("\n");
 
         // The body needs to be base64url encoded.
@@ -70,6 +73,7 @@ const sendAutoReply = async (auth, messageId) => {
             .replace(/\//g, "_")
             .replace(/=+$/, "");
 
+        // send the auto reply email
         await gmail.users.messages.send({
             userId: "me",
             requestBody: {
@@ -78,29 +82,31 @@ const sendAutoReply = async (auth, messageId) => {
         });
 
         console.log(`Email has been sent to the ${toEmail}`);
-       
     } catch (error) {
         console.error(`Error while replying email ${error.message}`);
     }
 };
 
-const isEmailThreadUnanswered = async (auth, threadId) => {
+// function to check if the email thread is already replied 
+const isEmailThreadAnswered = async (auth, threadId) => {
     try {
         const thread = await fetchThreadWithId(auth, threadId);
 
         if (thread.messages.length > 0) {
-            const firstMessage = thread.messages[0];
-            const secondMessage = thread.messages[1];
-
-            return (
-                (firstMessage.labelIds &&
-                    (firstMessage.labelIds.includes("AutoReply") ||
-                        firstMessage.labelIds.includes("Label_2") ||
-                        firstMessage.labelIds.includes("SENT"))) ||
-                (secondMessage &&
-                    (secondMessage.labelIds.includes("SENT") ||
-                        secondMessage.labelIds.includes("AutoReply")))
-            );
+            
+            if (
+                // checks whether the first thread contains a label of autoReply or sent or the id of autoReply
+                (thread.messages[0].labelIds &&
+                    (thread.messages[0].labelIds.includes("AutoReply") ||
+                        thread.messages[0].labelIds.includes("Label_2") ||
+                        thread.messages[0].labelIds.includes("SENT"))) ||
+                // since it is a thread the first thread message contains the sender's email
+                // and we are checking that email has a reply or not, hence we are using threads.messages[1]
+                (thread.messages[1] &&
+                    thread.messages[1].labelIds.includes("SENT"))
+            ) {
+                return true;
+            }
         }
         return false;
     } catch (error) {
@@ -109,6 +115,7 @@ const isEmailThreadUnanswered = async (auth, threadId) => {
     }
 };
 
+// function to fetch the info of the email thread using threadId
 const fetchThreadWithId = async (auth, threadId) => {
     const gmail = google.gmail({ version: "v1", auth });
 
@@ -123,12 +130,15 @@ const fetchThreadWithId = async (auth, threadId) => {
     }
 };
 
-const addLabel = async (auth, messageId, labelName) => {
+// add a label to the specific email using emailId
+const addLabel = async (auth, emailId, labelName) => {
     try {
         const gmail = google.gmail({ version: "v1", auth });
         const existingLabels = await gmail.users.labels.list({ userId: "me" });
 
-        const label = existingLabels.data.labels.find((l) => l.name === labelName);
+        const label = existingLabels.data.labels.find(
+            (l) => l.name === labelName
+        );
 
         if (!label) {
             const createdLabel = await gmail.users.labels.create({
@@ -142,7 +152,7 @@ const addLabel = async (auth, messageId, labelName) => {
 
         await gmail.users.messages.modify({
             userId: "me",
-            id: messageId,
+            id: emailId,
             requestBody: { addLabelIds: [labelName] },
         });
     } catch (error) {
@@ -150,10 +160,11 @@ const addLabel = async (auth, messageId, labelName) => {
     }
 };
 
+// exports the email related functions to use it in other modules
 module.exports = {
     listEmails,
     sendAutoReply,
-    isEmailThreadUnanswered,
+    isEmailThreadAnswered,
     fetchThreadWithId,
     addLabel,
 };

@@ -3,7 +3,7 @@ const controller = require("./controller");
 const runApplication = async() => {
     console.log("Application has been started!");
     try {
-        await controller.checkEmail();
+        await controller.replyUnansweredEmail();
     } catch (error) {
         console.error(`Error: ${error.message}`);
     }
@@ -11,7 +11,7 @@ const runApplication = async() => {
     // Set up an interval to invoke the function every 45 to 120 seconds
     setInterval(async () => {
         try {
-            await controller.checkEmail();
+            await controller.replyUnansweredEmail();
         } catch (error) {
             console.error(`Error: ${error.message}`);
         }
