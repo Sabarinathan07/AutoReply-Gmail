@@ -15,7 +15,7 @@ Automate the process of sending auto reply emails using nodejs and googleapis
  ```   
 
  #### Download credentials.json
-Follow the link [developers.google.com](https://developers.google.com/gmail/api/quickstart/nodejs) to set up the environment and download the credentials.json file.
+Follow the link [developers.google.com](https://developers.google.com/gmail/api/quickstart/nodejs) to set up the environment and download the credentials.json file inside the auth folder
 
 ```bash 
     node index.js
